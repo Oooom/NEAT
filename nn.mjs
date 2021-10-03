@@ -6,47 +6,20 @@ function steepSigmoid(x){
     return 1 / (1 + Math.E ** -4.9*x)
 }
 
-/*
-    node (id, type, activation_fn)
-    connection (id, disabled, weight, innov)
-*/
-
-class Node{
-    constructor(type, id, activation_fn){
-        this.type = type
-        this.id   = id
-        this.activation_fn = activation_fn
-        
-        //transient variables
-        this.op   = null
-        this.prev_op = null
-        this.ip   = null
-    }
-}
-
 class NeuralNetwork{
 
     constructor(genome){
-        this.nodes = nodes
-        this.connections = connections
+        this.nodes = genome.nodes
+        this.connections = genome.connections
 
-        this.id_to_ref    = {}
-        this.ip_node_ids  = []
+        this.id_to_ref    = genome.id_to_ref
+        this.ip_node_ids  = genome.ip_node_ids
+        this.op_node_ids  = genome.op_node_ids
 
-        this.from_connections_of = {}
-        this.to_connections_of = {}
+        this.from_connections_of = genome.from_connections_of
+        this.to_connections_of   = genome.to_connections_of
 
-        for(var node of this.nodes){
-            this.id_to_ref[node.id] = node
-            if(node.type == "input"){
-                this.ip_node_ids.push(node.id)
-            }
-        }
-        
-        for(var connection of this.connections){
-            this.from_connections_of[connection.from] = connection
-            this.to_connections_of[connection.to]     = connection
-        }
+        this.has_any_enabled_recurrent_neurons = genome.has_any_enabled_recurrent_neurons
     }
 
     loadOPofIP(ips){
@@ -73,38 +46,67 @@ class NeuralNetwork{
         return this.id_to_ref[id]
     }
 
-    getNextNodesOf(node_id){
+    calculateOutputOfNode(node_id){
+        
+        var weighted_ip = 0
 
-        if(this.getNode(node_id).type == "output"){
-            throw new Error("Why Asking For Next Nodes of OUTPUT node ?")
-        }
+        var curr_node = this.getNode(node_id)
 
-        var next_nodes = []
+        for(var connection of this.to_connections_of[node_id]){
+            var prev_node = this.getNode(connection.from)
 
-        for(var connection of this.connections){
-            if(connection.from == node_id){
-                next_nodes.push(connection.to)
+            var ip = null
+
+            if(prev_node.op == null){
+
+                if(connection.is_recurrent){
+                    if(prev_node.prev_op != null){
+                        ip = prev_node.prev_op
+                    }else{
+                        ip = 0
+                    }
+                }else{
+                    this.calculateOutputOfNode(prev_node.id) 
+                    ip = prev_node.op
+                }
+
+            }else{
+                ip = prev_node.op
             }
+
+            weighted_ip += ip * connection.weight
         }
+
+        curr_node.op = curr_node.activation_fn(weighted_ip)
 
     }
 
-    evaluate(node_id){
-        var to_evaluate_first = []
-        var connections       = []
+    calculateOutputOfOutputNodes(){
+        var outputs = []
+        for(var node_id of this.op_node_ids){
+            this.calculateOutputOfNode(node_id)
+            outputs.push(this.getNode(node_id).op)
+        }
 
-        for(var connection of this.connections){
-            if(connection.to == node_id){
+        return outputs
+    }
 
+    stepForward(){
+        for(var node of this.nodes){
+            if( !(node.type == "input" || node.type == "bias") ){
+                node.prev_op = node.op
+                node.op      = null
             }
         }
     }
 
     predict(ips){
-        
         this.loadOPofIP(ips)
+        var outputs = this.calculateOutputOfOutputNodes()
+        this.stepForward()
 
+        return outputs
     }
 }
 
-export { NeuralNetwork, Node, sigmoid, steepSigmoid }
+export { NeuralNetwork, sigmoid, steepSigmoid }

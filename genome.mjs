@@ -14,6 +14,10 @@ class NodeGene {
         this.id = id
         this.type = type
         this.activation_fn = activation_fn
+
+        // transient data
+        this.op      = null
+        this.prev_op = null
     }
 }
 
@@ -27,20 +31,39 @@ class Genome {
 
         this.id_to_ref = {}
         this.ip_node_ids = []
+        this.op_node_ids = []
 
         this.from_connections_of = {}
         this.to_connections_of = {}
+
+        this.has_any_enabled_recurrent_neurons = false
 
         for (var node of this.nodes) {
             this.id_to_ref[node.id] = node
             if (node.type == "input") {
                 this.ip_node_ids.push(node.id)
             }
+            if (node.type == "output") {
+                this.op_node_ids.push(node.id)
+            }
         }
 
         for (var connection of this.connections) {
-            this.from_connections_of[connection.from] = connection
-            this.to_connections_of[connection.to] = connection
+            if (this.from_connections_of[connection.from]){
+                this.from_connections_of[connection.from].push(connection)
+            }else{
+                this.from_connections_of[connection.from] = [connection]
+            }
+
+            if (this.to_connections_of[connection.to]) {
+                this.to_connections_of[connection.to].push(connection)
+            } else {
+                this.to_connections_of[connection.to] = [connection]
+            }
+
+            if(!connection.is_disabled && connection.is_recurrent){
+                this.has_any_enabled_recurrent_neurons = true
+            }
         }
     }
 
@@ -58,9 +81,11 @@ class Genome {
                 traversed.push(next)
             }
 
-            for(var connection of this.from_connections_of[next.to]){
-                if(!connection.is_recurrent && to_traverse.indexOf(connection) == -1){
-                    to_traverse.push(connection)
+            if (this.from_connections_of[next.to]){
+                for(var connection of this.from_connections_of[next.to]){
+                    if (!connection.is_recurrent && to_traverse.indexOf(connection) == -1 ){
+                        to_traverse.push(connection)
+                    }
                 }
             }
         }
