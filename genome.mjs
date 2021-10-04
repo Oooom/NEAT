@@ -1,3 +1,4 @@
+import {c_m, c_um} from "./parameters.mjs"
 class ConnectGene {
     constructor(from, to, weight, innov, disabled) {
         this.from = from
@@ -25,6 +26,8 @@ class Genome {
     constructor(nodes, connections) {
         this.nodes = nodes
         this.connections = connections
+
+        this.connections.sort((a,b)=>a.innov-b.innov)
 
         this.nodes = nodes
         this.connections = connections
@@ -100,6 +103,58 @@ class Genome {
     mutationAddNode() {
 
     }
+
+    distanceFrom(genome){
+        var unmatched_count = 0
+        var matched_count   = 0
+        var sum_weight_difference_of_matched = 0
+
+        var this_i = 0
+        var other_i = 0
+
+        while(this_i < this.connections.length || other_i < genome.connections.length){
+
+            if(this_i == this.connections.length || other_i == this.connections.length){
+                if (this_i == this.connections.length) {
+                    other_i++
+                    unmatched_count++
+                }
+                else if (other_i == genome.connections.length) {
+                    this_i++
+                    unmatched_count++
+                }
+            }else{
+                if (this.connections[this_i].innov == genome.connections[other_i].innov) {
+                    sum_weight_difference_of_matched += Math.abs(this.connections[this_i].weight - genome.connections[other_i].weight)
+
+                    matched_count++
+
+                    this_i++
+                    other_i++
+                }else{
+                    if (this.connections[this_i].innov < genome.connections[other_i].innov) {
+                        this_i++
+                        unmatched_count++
+                    } else {
+                        other_i++
+                        unmatched_count++
+                    }
+                }
+            }
+
+        }                
+
+        if(unmatched_count + matched_count * 2 != this.connections.length + genome.connections.length){
+            throw new Error("Matched and Unmatched Count were different from total gene length in distance calculation")
+        }
+
+        if( matched_count > 0 ){
+            return c_um * unmatched_count + c_m * (sum_weight_difference_of_matched / matched_count)
+        }else{
+            return c_um * unmatched_count
+        }
+    }
+
 }
 
 export { Genome, NodeGene, ConnectGene }

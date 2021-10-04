@@ -188,3 +188,285 @@ describe("evaluation tests", function(){
 
     })
 })
+
+describe("genome compatibility tests", function () {
+
+    it("distance with self should be 0", function(){
+        
+        // COPIED FROM MINIMAL XOR TEST
+        var i1 = new NodeGene("i-1", "input")
+        var i2 = new NodeGene("i-2", "input")
+
+        var h1 = new NodeGene("h-1", "hidden", sigmoid)
+        var h2 = new NodeGene("h-2", "hidden", sigmoid)
+
+        var o1 = new NodeGene("o-1", "output", sigmoid)
+
+        var bh1 = new NodeGene("b-h1", "bias")
+        bh1.op = -4.8419018689338325
+        
+        var bh2 = new NodeGene("b-h2", "bias")
+        bh2.op = -2.1328499034609063
+        
+        var bo1 = new NodeGene("b-o1", "bias")
+        bo1.op = -2.8804196258629196
+
+
+        var i1_h1 = new ConnectGene("i-1", "h-1", 3.191352509627136, 1, false)
+        var i1_h2 = new ConnectGene("i-1", "h-2", 5.491641199017287, 2, false)
+        
+        var i2_h1 = new ConnectGene("i-2", "h-1", 3.179256100003881, 3, false)
+        var i2_h2 = new ConnectGene("i-2", "h-2", 5.444467626110183, 4, false)
+        
+        var h1_o1 = new ConnectGene("h-1", "o-1", -6.998221924119023, 5, false)
+        var h2_o1 = new ConnectGene("h-2", "o-1",  6.488756231728473, 6, false)
+
+        var bh1_h1 = new ConnectGene("b-h1", "h-1", 1, 7, false)
+        var bh2_h2 = new ConnectGene("b-h2", "h-2", 1, 8, false)
+        var bo1_o1 = new ConnectGene("b-o1", "o-1", 1, 9, false)
+
+        var genome = new Genome([i1, i2, h1, h2, o1, bh1, bh2, bo1], [i1_h1, i1_h2, i2_h1, i2_h2, h1_o1, h2_o1, bh1_h1, bh2_h2, bo1_o1])
+        // COPY END
+
+        assert.equal(genome.distanceFrom(genome), 0, "distance with self not 0")
+    })
+
+    it("distance with identical not 0", function(){
+        
+        // COPIED FROM MINIMAL XOR TEST
+        var i1 = new NodeGene("i-1", "input")
+        var i2 = new NodeGene("i-2", "input")
+
+        var h1 = new NodeGene("h-1", "hidden", sigmoid)
+        var h2 = new NodeGene("h-2", "hidden", sigmoid)
+
+        var o1 = new NodeGene("o-1", "output", sigmoid)
+
+        var bh1 = new NodeGene("b-h1", "bias")
+        bh1.op = -4.8419018689338325
+        
+        var bh2 = new NodeGene("b-h2", "bias")
+        bh2.op = -2.1328499034609063
+        
+        var bo1 = new NodeGene("b-o1", "bias")
+        bo1.op = -2.8804196258629196
+
+
+        var i1_h1 = new ConnectGene("i-1", "h-1", 3.191352509627136, 1, false)
+        var i1_h2 = new ConnectGene("i-1", "h-2", 5.491641199017287, 2, false)
+        
+        var i2_h1 = new ConnectGene("i-2", "h-1", 3.179256100003881, 3, false)
+        var i2_h2 = new ConnectGene("i-2", "h-2", 5.444467626110183, 4, false)
+        
+        var h1_o1 = new ConnectGene("h-1", "o-1", -6.998221924119023, 5, false)
+        var h2_o1 = new ConnectGene("h-2", "o-1",  6.488756231728473, 6, false)
+
+        var bh1_h1 = new ConnectGene("b-h1", "h-1", 1, 7, false)
+        var bh2_h2 = new ConnectGene("b-h2", "h-2", 1, 8, false)
+        var bo1_o1 = new ConnectGene("b-o1", "o-1", 1, 9, false)
+
+        var genome1 = new Genome([i1, i2, h1, h2, o1, bh1, bh2, bo1], [i1_h1, i1_h2, i2_h1, i2_h2, h1_o1, h2_o1, bh1_h1, bh2_h2, bo1_o1])
+        var genome2 = new Genome(JSON.parse(JSON.stringify([i1, i2, h1, h2, o1, bh1, bh2, bo1])), JSON.parse(JSON.stringify([i1_h1, i1_h2, i2_h1, i2_h2, h1_o1, h2_o1, bh1_h1, bh2_h2, bo1_o1])))
+        // COPY END
+
+        assert.equal(genome1.distanceFrom(genome2), 0, "distance with identical not 0")
+    })
+
+    it("distance with nothing in common", function () {
+
+        // COPIED FROM MINIMAL XOR TEST
+        var i1 = new NodeGene("i-1", "input")
+        var i2 = new NodeGene("i-2", "input")
+
+        var h1 = new NodeGene("h-1", "hidden", sigmoid)
+        var h2 = new NodeGene("h-2", "hidden", sigmoid)
+
+        var o1 = new NodeGene("o-1", "output", sigmoid)
+
+        var bh1 = new NodeGene("b-h1", "bias")
+        bh1.op = -4.8419018689338325
+
+        var bh2 = new NodeGene("b-h2", "bias")
+        bh2.op = -2.1328499034609063
+
+        var bo1 = new NodeGene("b-o1", "bias")
+        bo1.op = -2.8804196258629196
+
+
+        var i1_h1 = new ConnectGene("i-1", "h-1", 3.191352509627136, 1, false)
+        var i1_h2 = new ConnectGene("i-1", "h-2", 5.491641199017287, 2, false)
+
+        var i2_h1 = new ConnectGene("i-2", "h-1", 3.179256100003881, 3, false)
+        var i2_h2 = new ConnectGene("i-2", "h-2", 5.444467626110183, 4, false)
+
+        var h1_o1 = new ConnectGene("h-1", "o-1", -6.998221924119023, 5, false)
+        var h2_o1 = new ConnectGene("h-2", "o-1", 6.488756231728473, 6, false)
+
+        var bh1_h1 = new ConnectGene("b-h1", "h-1", 1, 7, false)
+        var bh2_h2 = new ConnectGene("b-h2", "h-2", 1, 8, false)
+        var bo1_o1 = new ConnectGene("b-o1", "o-1", 1, 9, false)
+
+        var genome1 = new Genome([i1, i2, h1, h2, o1, bh1, bh2, bo1], [i1_h1, i1_h2, i2_h1, i2_h2, h1_o1, h2_o1, bh1_h1, bh2_h2, bo1_o1])
+        var genome2 = new Genome(JSON.parse(JSON.stringify([i1, i2, h1, h2, o1, bh1, bh2, bo1])), JSON.parse(JSON.stringify([i1_h1, i1_h2, i2_h1, i2_h2, h1_o1, h2_o1, bh1_h1, bh2_h2, bo1_o1])))
+        
+        for(var i = 0; i < genome2.connections.length; i++){
+            genome2.connections[i].innov *= 10
+        }
+        
+        // COPY END
+
+        assert.equal(genome1.distanceFrom(genome2), 18, "distance with totally different should be same as number of genes in them")
+    })
+
+    it("distance with some in common, with those in common having same weight", function () {
+
+        // COPIED FROM MINIMAL XOR TEST
+        var i1 = new NodeGene("i-1", "input")
+        var i2 = new NodeGene("i-2", "input")
+
+        var h1 = new NodeGene("h-1", "hidden", sigmoid)
+        var h2 = new NodeGene("h-2", "hidden", sigmoid)
+
+        var o1 = new NodeGene("o-1", "output", sigmoid)
+
+        var bh1 = new NodeGene("b-h1", "bias")
+        bh1.op = -4.8419018689338325
+
+        var bh2 = new NodeGene("b-h2", "bias")
+        bh2.op = -2.1328499034609063
+
+        var bo1 = new NodeGene("b-o1", "bias")
+        bo1.op = -2.8804196258629196
+
+
+        var i1_h1 = new ConnectGene("i-1", "h-1", 3.191352509627136, 1, false)
+        var i1_h2 = new ConnectGene("i-1", "h-2", 5.491641199017287, 2, false)
+
+        var i2_h1 = new ConnectGene("i-2", "h-1", 3.179256100003881, 3, false)
+        var i2_h2 = new ConnectGene("i-2", "h-2", 5.444467626110183, 4, false)
+
+        var h1_o1 = new ConnectGene("h-1", "o-1", -6.998221924119023, 5, false)
+        var h2_o1 = new ConnectGene("h-2", "o-1", 6.488756231728473, 6, false)
+
+        var bh1_h1 = new ConnectGene("b-h1", "h-1", 1, 7, false)
+        var bh2_h2 = new ConnectGene("b-h2", "h-2", 1, 8, false)
+        var bo1_o1 = new ConnectGene("b-o1", "o-1", 1, 9, false)
+
+        var genome1 = new Genome([i1, i2, h1, h2, o1, bh1, bh2, bo1], [i1_h1, i1_h2, i2_h1, i2_h2, h1_o1, h2_o1, bh1_h1, bh2_h2, bo1_o1])
+        
+        var new_conns = JSON.parse(JSON.stringify([i1_h1, i1_h2, i2_h1, i2_h2, h1_o1, h2_o1, bh1_h1, bh2_h2, bo1_o1]))
+        
+        for(var i = 0; i < 4; i++){
+            new_conns[i].innov *= 10
+        }
+
+        var genome2 = new Genome(JSON.parse(JSON.stringify([i1, i2, h1, h2, o1, bh1, bh2, bo1])), new_conns)
+
+        // COPY END
+
+        assert.equal(genome1.distanceFrom(genome2), 8 + 0, "distance with matching genomes having same weight should be equal to unmatching genome count")
+    })
+    
+    it("distance with all in common, but weight differences", function () {
+
+        // COPIED FROM MINIMAL XOR TEST
+        var i1 = new NodeGene("i-1", "input")
+        var i2 = new NodeGene("i-2", "input")
+
+        var h1 = new NodeGene("h-1", "hidden", sigmoid)
+        var h2 = new NodeGene("h-2", "hidden", sigmoid)
+
+        var o1 = new NodeGene("o-1", "output", sigmoid)
+
+        var bh1 = new NodeGene("b-h1", "bias")
+        bh1.op = -4.8419018689338325
+
+        var bh2 = new NodeGene("b-h2", "bias")
+        bh2.op = -2.1328499034609063
+
+        var bo1 = new NodeGene("b-o1", "bias")
+        bo1.op = -2.8804196258629196
+
+
+        var i1_h1 = new ConnectGene("i-1", "h-1", 10, 1, false)
+        var i1_h2 = new ConnectGene("i-1", "h-2", 10, 2, false)
+
+        var i2_h1 = new ConnectGene("i-2", "h-1", 10, 3, false)
+        var i2_h2 = new ConnectGene("i-2", "h-2", 10, 4, false)
+
+        var h1_o1 = new ConnectGene("h-1", "o-1", 10, 5, false)
+        var h2_o1 = new ConnectGene("h-2", "o-1", 10, 6, false)
+
+        var bh1_h1 = new ConnectGene("b-h1", "h-1", 10, 7, false)
+        var bh2_h2 = new ConnectGene("b-h2", "h-2", 10, 8, false)
+        var bo1_o1 = new ConnectGene("b-o1", "o-1", 10, 9, false)
+
+        var genome1 = new Genome([i1, i2, h1, h2, o1, bh1, bh2, bo1], [i1_h1, i1_h2, i2_h1, i2_h2, h1_o1, h2_o1, bh1_h1, bh2_h2, bo1_o1])
+        
+        var new_conns = JSON.parse(JSON.stringify([i1_h1, i1_h2, i2_h1, i2_h2, h1_o1, h2_o1, bh1_h1, bh2_h2, bo1_o1]))
+        
+        for(var i = 0; i < new_conns.length; i++){
+            new_conns[i].weight = i
+        }
+
+        var genome2 = new Genome(JSON.parse(JSON.stringify([i1, i2, h1, h2, o1, bh1, bh2, bo1])), new_conns)
+
+        // COPY END
+
+        assert.equal(genome1.distanceFrom(genome2), 0.4 * 6)
+    })
+
+    it("distance with some common and some weight differences", function () {
+
+        // COPIED FROM MINIMAL XOR TEST
+        var i1 = new NodeGene("i-1", "input")
+        var i2 = new NodeGene("i-2", "input")
+
+        var h1 = new NodeGene("h-1", "hidden", sigmoid)
+        var h2 = new NodeGene("h-2", "hidden", sigmoid)
+
+        var o1 = new NodeGene("o-1", "output", sigmoid)
+
+        var bh1 = new NodeGene("b-h1", "bias")
+        bh1.op = -4.8419018689338325
+
+        var bh2 = new NodeGene("b-h2", "bias")
+        bh2.op = -2.1328499034609063
+
+        var bo1 = new NodeGene("b-o1", "bias")
+        bo1.op = -2.8804196258629196
+
+
+        var i1_h1 = new ConnectGene("i-1", "h-1", 1, 1, false)
+        var i1_h2 = new ConnectGene("i-1", "h-2", 2, 2, false)
+
+        var i2_h1 = new ConnectGene("i-2", "h-1", 3, 3, false)
+        var i2_h2 = new ConnectGene("i-2", "h-2", 4, 4, false)
+
+        var h1_o1 = new ConnectGene("h-1", "o-1", 5, 5, false)
+        var h2_o1 = new ConnectGene("h-2", "o-1", 6, 6, false)
+
+        var bh1_h1 = new ConnectGene("b-h1", "h-1", 7, 7, false)
+        var bh2_h2 = new ConnectGene("b-h2", "h-2", 8, 8, false)
+        var bo1_o1 = new ConnectGene("b-o1", "o-1", 9, 9, false)
+
+        var genome1 = new Genome([i1, i2, h1, h2, o1, bh1, bh2, bo1], [i1_h1, i1_h2, i2_h1, i2_h2, h1_o1, h2_o1, bh1_h1, bh2_h2, bo1_o1])
+
+        var new_conns = JSON.parse(JSON.stringify([i1_h1, i1_h2, i2_h1, i2_h2, h1_o1, h2_o1, bh1_h1, bh2_h2, bo1_o1]))
+
+        for (var i = 0; i < new_conns.length; i++) {
+            if(i % 2 == 0){
+                new_conns[i].innov *= 10
+            }else{
+                new_conns[i].weight += 1
+            }
+        }
+
+        var genome2 = new Genome(JSON.parse(JSON.stringify([i1, i2, h1, h2, o1, bh1, bh2, bo1])), new_conns)
+
+        // COPY END
+
+        assert.equal(genome1.distanceFrom(genome2), 10 + 0.4 * 1)
+    })
+
+})
