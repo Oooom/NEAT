@@ -4,6 +4,7 @@ import { Genome } from "../genome.mjs"
 import { NodeGene } from "../genome.mjs"
 import { sigmoid, steepSigmoid } from "../nn.mjs"
 import {NeuralNetwork} from "../nn.mjs"
+import {initialGenome, solutionGenome} from "../xor_support.mjs"
 
 
 describe("loadOPofIP tests", function(){
@@ -469,4 +470,86 @@ describe("genome compatibility tests", function () {
         assert.equal(genome1.distanceFrom(genome2), 10 + 0.4 * 1)
     })
 
+})
+
+describe("mutation add connection tests", function(){
+    it("calling mutation on initial xor genome repeatedly for 100 times and comparing all possible outcomes", function(){
+
+        var comb = {}
+
+        for (var iter = 0; iter < 100; iter++){
+            var ctxt = { innov: 0 }
+
+            var genome = initialGenome(ctxt)
+
+            genome.mutateAddConnection()
+
+            assert.equal(genome.connections.length, 4, "connection not added")
+
+            var new_conn = genome.connections[genome.connections.length - 1]
+            for (var i = 0; i < genome.connections.length - 1; i++){
+                assert.equal(new_conn.from == genome.connections[i].from && new_conn.to == genome.connections[i].to, false, "duplicate connection added")
+            }
+
+            assert.equal(genome.getNode(new_conn.to).type == "input" || genome.getNode(new_conn.to).type == "bias", false, "connection to input or bias made")
+
+            if(new_conn.from == new_conn.to){
+                assert.equal(new_conn.is_recurrent, true, "self loop not detected as recurrent")
+            }else{
+                assert.equal(new_conn.is_recurrent, false, "non recurrent detected as recurrent")
+            }
+
+            var combination = new_conn.from + " " + new_conn.to
+
+            comb[combination] = true
+        }
+
+        assert.equal(Object.keys(comb).length, 1, "all combinations did not occur")
+
+    })
+    
+    it("calling mutation on solution xor genome repeatedly for 100 times and comparing all possible outcomes", function(){
+
+        var comb = {}
+
+        for (var iter = 0; iter < 100; iter++){
+            var ctxt = { innov: 0 }
+
+            var genome = solutionGenome(ctxt)
+
+            genome.mutateAddConnection()
+
+            assert.equal(genome.connections.length, 10, "connection not added")
+
+            var new_conn = genome.connections[genome.connections.length - 1]
+            for (var i = 0; i < genome.connections.length - 1; i++){
+                assert.equal(new_conn.from == genome.connections[i].from && new_conn.to == genome.connections[i].to, false, "duplicate connection added")
+            }
+
+            assert.equal(genome.getNode(new_conn.to).type == "input" || genome.getNode(new_conn.to).type == "bias", false, "connection to input or bias made")
+
+            if(new_conn.from == new_conn.to){
+                assert.equal(new_conn.is_recurrent, true, "self loop not detected as recurrent")
+            }
+
+            var combination = new_conn.from + " " + new_conn.to
+
+            switch(combination){
+                case "o1 h1":
+                case "o1 h2":
+                case "o1 o1":
+                case "h1 h1":
+                case "h2 h2":
+                        assert.equal(new_conn.is_recurrent, true, "recurrent not detected")
+                    break
+                default:
+                        assert.equal(new_conn.is_recurrent, false, `false recurrent between ${new_conn.from} & ${new_conn.to} detected`)
+                    break
+            }
+
+            comb[combination] = true
+        }
+
+        assert.equal(Object.keys(comb).length, 15, "all combinations did not occur, only these occurred: " + Object.keys(comb))
+    })
 })

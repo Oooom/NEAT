@@ -1,4 +1,5 @@
 import {c_m, c_um} from "./parameters.mjs"
+import { getUniformRandomFromRange, getUniformRandomFromRangeInt, getNormalRandom} from "./lib.mjs"
 class ConnectGene {
     constructor(from, to, weight, innov, disabled) {
         this.from = from
@@ -7,6 +8,16 @@ class ConnectGene {
         this.innov = innov
         this.is_recurrent = false
         this.is_disabled = disabled
+
+        this.hidden_id_last = 0
+    }
+
+    mutateRandomly(){
+        this.weight = getUniformRandomFromRange(-1, 1)
+    }
+
+    mutateNormally(){
+        this.weight += getNormalRandom()
     }
 }
 
@@ -23,7 +34,7 @@ class NodeGene {
 }
 
 class Genome {
-    constructor(nodes, connections) {
+    constructor(nodes, connections, ctxt) {
         this.nodes = nodes
         this.connections = connections
 
@@ -31,6 +42,8 @@ class Genome {
 
         this.nodes = nodes
         this.connections = connections
+
+        this.ctxt = ctxt
 
         this.id_to_ref = {}
         this.ip_node_ids = []
@@ -70,6 +83,14 @@ class Genome {
         }
     }
 
+    getNode(id){
+        if(!this.id_to_ref[id]){
+            throw new Error("Why is reference of " + id + " not present ?")
+        }
+
+        return this.id_to_ref[id]
+    }
+
     detectCycle(connection) {
         var traversed = []
 
@@ -96,11 +117,42 @@ class Genome {
         return false
     }
 
-    mutationAddConnection() {
+    mutateAddConnection() {
+        var found = false
 
+        while(!found){
+            var from = this.nodes[getUniformRandomFromRangeInt(0, this.nodes.length)]
+            var to   = this.nodes[getUniformRandomFromRangeInt(0, this.nodes.length)]
+
+            var is_bias_or_input = (to.type == "bias" || to.type == "input")
+            var is_connection_absent = (this.from_connections_of[from.id] == undefined || this.from_connections_of[from.id].findIndex((conn) => conn.to == to.id) == -1)
+
+            if (!is_bias_or_input && is_connection_absent ){
+                var new_conn = new ConnectGene(from.id, to.id, null, ++this.ctxt.innov, false)
+                new_conn.mutateRandomly()
+
+                this.connections.push(new_conn)
+
+                if (this.from_connections_of[new_conn.from]){
+                    this.from_connections_of[new_conn.from].push(new_conn)
+                }else{
+                    this.from_connections_of[new_conn.from] = [new_conn]
+                }
+                
+                if (this.to_connections_of[new_conn.to]){
+                    this.to_connections_of[new_conn.to].push(new_conn)
+                }else{
+                    this.to_connections_of[new_conn.to] = [new_conn]
+                }
+
+                new_conn.is_recurrent = this.detectCycle(new_conn)
+
+                found = true
+            }
+        }
     }
 
-    mutationAddNode() {
+    mutateAddNode() {
 
     }
 

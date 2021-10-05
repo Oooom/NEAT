@@ -22,6 +22,14 @@ class NeuralNetwork{
         this.has_any_enabled_recurrent_neurons = genome.has_any_enabled_recurrent_neurons
     }
 
+    getNode(id){
+        if(!this.id_to_ref[id]){
+            throw new Error("Why is reference of " + id + " not present ?")
+        }
+
+        return this.id_to_ref[id]
+    }
+
     loadOPofIP(ips){
         var i = 0
         var iter = 0
@@ -36,14 +44,6 @@ class NeuralNetwork{
         if(i != ips.length || iter != this.ip_node_ids.length){
             throw new Error("OP of IP not correctly loaded")
         }
-    }
-
-    getNode(id){
-        if(!this.id_to_ref[id]){
-            throw new Error("Why is reference of " + id + " not present ?")
-        }
-
-        return this.id_to_ref[id]
     }
 
     calculateOutputOfNode(node_id){
@@ -106,6 +106,10 @@ class NeuralNetwork{
         this.stepForward()
 
         return outputs
+    }
+
+    calculateFitness(){
+        throw new Error("OVERRIDE DEFAULT calculateFitness")
     }
 }
 
