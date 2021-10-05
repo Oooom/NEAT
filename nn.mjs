@@ -53,6 +53,8 @@ class NeuralNetwork{
         var curr_node = this.getNode(node_id)
 
         for(var connection of this.to_connections_of[node_id]){
+            if(connection.is_disabled) continue
+            
             var prev_node = this.getNode(connection.from)
 
             var ip = null

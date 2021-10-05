@@ -473,41 +473,6 @@ describe("genome compatibility tests", function () {
 })
 
 describe("mutation add connection tests", function(){
-    it("calling mutation on initial xor genome repeatedly for 100 times and comparing all possible outcomes", function(){
-
-        var comb = {}
-
-        for (var iter = 0; iter < 100; iter++){
-            var ctxt = { innov: 0 }
-
-            var genome = initialGenome(ctxt)
-
-            genome.mutateAddConnection()
-
-            assert.equal(genome.connections.length, 4, "connection not added")
-
-            var new_conn = genome.connections[genome.connections.length - 1]
-            for (var i = 0; i < genome.connections.length - 1; i++){
-                assert.equal(new_conn.from == genome.connections[i].from && new_conn.to == genome.connections[i].to, false, "duplicate connection added")
-            }
-
-            assert.equal(genome.getNode(new_conn.to).type == "input" || genome.getNode(new_conn.to).type == "bias", false, "connection to input or bias made")
-
-            if(new_conn.from == new_conn.to){
-                assert.equal(new_conn.is_recurrent, true, "self loop not detected as recurrent")
-            }else{
-                assert.equal(new_conn.is_recurrent, false, "non recurrent detected as recurrent")
-            }
-
-            var combination = new_conn.from + " " + new_conn.to
-
-            comb[combination] = true
-        }
-
-        assert.equal(Object.keys(comb).length, 1, "all combinations did not occur")
-
-    })
-    
     it("calling mutation on solution xor genome repeatedly for 100 times and comparing all possible outcomes", function(){
 
         var comb = {}
@@ -541,9 +506,11 @@ describe("mutation add connection tests", function(){
                 case "h1 h1":
                 case "h2 h2":
                         assert.equal(new_conn.is_recurrent, true, "recurrent not detected")
+                        assert.equal(genome.has_any_enabled_recurrent_neurons, true, "genome not aware of newly enabled recurrent neuron")
                     break
                 default:
                         assert.equal(new_conn.is_recurrent, false, `false recurrent between ${new_conn.from} & ${new_conn.to} detected`)
+                        assert.equal(genome.has_any_enabled_recurrent_neurons, false, "genome does not have any recurrent neuron but still it thinks it has one enabled")
                     break
             }
 
@@ -551,5 +518,43 @@ describe("mutation add connection tests", function(){
         }
 
         assert.equal(Object.keys(comb).length, 15, "all combinations did not occur, only these occurred: " + Object.keys(comb))
+    })
+})
+
+describe("mutate add node tests", function(){
+    it("calling mutation on solution xor genome repeatedly for 100 times and comparing all possible outcomes", function(){
+        var comb = {}
+
+        for (var iter = 0; iter < 100; iter++){
+            var ctxt = { innov: 0 }
+
+            var genome = solutionGenome(ctxt)
+
+            genome.mutateAddNode()
+
+            assert.equal(genome.nodes.length, 9, "node not added")
+            assert.equal(genome.connections.length, 11, "connections not added")
+
+            var new_node = genome.nodes[genome.nodes.length - 1]
+            var prev_conn = genome.connections[genome.connections.length - 2]
+            var next_conn = genome.connections[genome.connections.length - 1]
+
+            var broken_conn = genome.connections[genome.connections.findIndex((conn)=>conn.from == prev_conn.from && conn.to == next_conn.to)]
+
+            assert(broken_conn, "broken connection does not exist")
+            assert.equal(broken_conn.is_disabled, true, "broken connection not disabled")
+            assert.equal(prev_conn.weight, 1, "previous connection should have 1 weight")
+            assert.equal(next_conn.weight, broken_conn.weight, "next connection should have broken conn weight")
+
+            assert.equal(prev_conn.is_recurrent, false, "prev conn can never be recurrent")
+            assert.equal(next_conn.is_recurrent, broken_conn.is_recurrent, "next conn and broken conn should have same recurrency")
+
+            assert.equal(new_node.id, "h3", "new node not added with proper id")
+
+            var combination = broken_conn.from + " " + broken_conn.to
+            comb[combination] = true
+        }
+
+        assert.equal(Object.keys(comb).length, 9, "all combinations did not occur, only these occurred: " + Object.keys(comb))
     })
 })

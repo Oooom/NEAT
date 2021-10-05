@@ -1,5 +1,6 @@
 import {c_m, c_um} from "./parameters.mjs"
 import { getUniformRandomFromRange, getUniformRandomFromRangeInt, getNormalRandom} from "./lib.mjs"
+import { sigmoid } from "./nn.mjs"
 class ConnectGene {
     constructor(from, to, weight, innov, disabled) {
         this.from = from
@@ -8,8 +9,6 @@ class ConnectGene {
         this.innov = innov
         this.is_recurrent = false
         this.is_disabled = disabled
-
-        this.hidden_id_last = 0
     }
 
     mutateRandomly(){
@@ -36,12 +35,7 @@ class NodeGene {
 class Genome {
     constructor(nodes, connections, ctxt) {
         this.nodes = nodes
-        this.connections = connections
-
-        this.connections.sort((a,b)=>a.innov-b.innov)
-
-        this.nodes = nodes
-        this.connections = connections
+        this.connections = []
 
         this.ctxt = ctxt
 
@@ -49,10 +43,7 @@ class Genome {
         this.ip_node_ids = []
         this.op_node_ids = []
 
-        this.from_connections_of = {}
-        this.to_connections_of = {}
-
-        this.has_any_enabled_recurrent_neurons = false
+        var max = 0
 
         for (var node of this.nodes) {
             this.id_to_ref[node.id] = node
@@ -62,25 +53,53 @@ class Genome {
             if (node.type == "output") {
                 this.op_node_ids.push(node.id)
             }
+
+            if(node.type == "hidden"){
+                var num = parseInt(node.id.substring(1))
+
+                if (num > max){
+                    max = num
+                }
+            }
         }
 
-        for (var connection of this.connections) {
-            if (this.from_connections_of[connection.from]){
-                this.from_connections_of[connection.from].push(connection)
-            }else{
-                this.from_connections_of[connection.from] = [connection]
-            }
+        this.hidden_id_last = max
 
-            if (this.to_connections_of[connection.to]) {
-                this.to_connections_of[connection.to].push(connection)
-            } else {
-                this.to_connections_of[connection.to] = [connection]
-            }
+
+        this.from_connections_of = {}
+        this.to_connections_of = {}
+
+        this.has_any_enabled_recurrent_neurons = false
+
+        for (var connection of connections) {
+            this.addConnection(connection)
 
             if(!connection.is_disabled && connection.is_recurrent){
                 this.has_any_enabled_recurrent_neurons = true
             }
         }
+
+        this.connections.sort((a, b) => a.innov - b.innov)
+    }
+
+    addConnection(connection){
+        this.connections.push(connection)
+
+        if (this.from_connections_of[connection.from]) {
+            this.from_connections_of[connection.from].push(connection)
+        } else {
+            this.from_connections_of[connection.from] = [connection]
+        }
+
+        if (this.to_connections_of[connection.to]) {
+            this.to_connections_of[connection.to].push(connection)
+        } else {
+            this.to_connections_of[connection.to] = [connection]
+        }
+    }
+
+    addNode(node){
+        this.nodes.push(node)
     }
 
     getNode(id){
@@ -128,24 +147,16 @@ class Genome {
             var is_connection_absent = (this.from_connections_of[from.id] == undefined || this.from_connections_of[from.id].findIndex((conn) => conn.to == to.id) == -1)
 
             if (!is_bias_or_input && is_connection_absent ){
-                var new_conn = new ConnectGene(from.id, to.id, null, ++this.ctxt.innov, false)
+                var new_conn = new ConnectGene(from.id, to.id, NaN, ++this.ctxt.innov, false)
                 new_conn.mutateRandomly()
 
-                this.connections.push(new_conn)
-
-                if (this.from_connections_of[new_conn.from]){
-                    this.from_connections_of[new_conn.from].push(new_conn)
-                }else{
-                    this.from_connections_of[new_conn.from] = [new_conn]
-                }
-                
-                if (this.to_connections_of[new_conn.to]){
-                    this.to_connections_of[new_conn.to].push(new_conn)
-                }else{
-                    this.to_connections_of[new_conn.to] = [new_conn]
-                }
+                this.addConnection(new_conn)
 
                 new_conn.is_recurrent = this.detectCycle(new_conn)
+
+                if(new_conn.is_recurrent){
+                    this.has_any_enabled_recurrent_neurons = true
+                }
 
                 found = true
             }
@@ -153,7 +164,27 @@ class Genome {
     }
 
     mutateAddNode() {
+        var found = false
 
+        while(!found){
+            var conn = this.connections[getUniformRandomFromRangeInt(0, this.connections.length)]
+
+            if(conn.is_disabled == false){
+                var new_node = new NodeGene("h"+(++this.hidden_id_last), "hidden", sigmoid)
+                
+                var prev_conn = new ConnectGene(conn.from, new_node.id, 1, ++this.ctxt.innov, false)
+                var next_conn = new ConnectGene(new_node.id, conn.to, conn.weight, ++this.ctxt.innov, false)
+                next_conn.is_recurrent = conn.is_recurrent
+
+                conn.is_disabled = true
+
+                this.addConnection(prev_conn)
+                this.addConnection(next_conn)
+                this.addNode(new_node)
+
+                found = true
+            }
+        }
     }
 
     distanceFrom(genome){
