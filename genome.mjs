@@ -1,5 +1,5 @@
 import {c_m, c_um} from "./parameters.mjs"
-import { getUniformRandomFromRange, getUniformRandomFromRangeInt, getNormalRandom} from "./lib.mjs"
+import { getUniformRandomFromRange, getUniformRandomFromRangeInt, getNormalRandom, percent} from "./lib.mjs"
 import { sigmoid } from "./nn.mjs"
 class ConnectGene {
     constructor(from, to, weight, innov, disabled) {
@@ -18,6 +18,12 @@ class ConnectGene {
     mutateNormally(){
         this.weight += getNormalRandom()
     }
+
+    clone(){
+        var cl = new ConnectGene(this.from, this.to, this.weight, this.innov, this.disabled)
+
+        return cl
+    }
 }
 
 class NodeGene {
@@ -29,6 +35,12 @@ class NodeGene {
         // transient data
         this.op      = null
         this.prev_op = null
+    }
+
+    clone(){
+        var cl = new NodeGene(this.id, this.type, this.activation_fn)
+
+        return cl
     }
 }
 
@@ -236,6 +248,90 @@ class Genome {
         }else{
             return c_um * unmatched_count
         }
+    }
+
+    crossover(other){
+        var percent_of_baggage_from_this = this.fitness == other.fitness ? 50 : this.fitness > other.fitness ? 100 : 0
+        
+        var nodes = new Set()
+        var connections = []
+
+        var this_i  = 0
+        var other_i = 0
+
+        while(this_i < this.connections.length || other_i < other.connections.length){
+
+            if(this_i == this.connections.length || other_i == this.connections.length){
+                if (this_i == this.connections.length) {
+                    while( other_i < other.connections.length ){
+                        if( !percent(percent_of_baggage_from_this) ){
+                            connections.push( other.connections[other_i] )
+                            nodes.add( other.getNode( other.connections[other_i].from ) )
+                            nodes.add( other.getNode( other.connections[other_i].to   ) )
+                        }
+
+                        other_i++
+                    }
+                }
+                else if (other_i == other.connections.length) {
+                    while( this_i < this.connections.length ){
+                        if( percent(percent_of_baggage_from_this) ){
+                            connections.push( this.connections[this_i] )
+                            nodes.add( this.getNode( this.connections[this_i].from ) )
+                            nodes.add( this.getNode( this.connections[this_i].to   ) )
+                        }
+
+                        this_i++
+                    }
+                }
+
+                break
+            }else{
+                if (this.connections[this_i].innov == other.connections[other_i].innov) {
+                    
+                    if( percent(50) ){
+                        connections.push( this.connections[this_i] )
+                        nodes.add( this.getNode( this.connections[this_i].from ) )
+                        nodes.add( this.getNode( this.connections[this_i].to   ) )
+                    }else{
+                        connections.push( other.connections[other_i] )
+                        nodes.add( other.getNode( other.connections[other_i].from ) )
+                        nodes.add( other.getNode( other.connections[other_i].to   ) )
+                    }
+
+                    if( other.connections[other_i].is_disabled || this.connections[this_i].is_disabled ){
+                        if( percent(75) ){
+                            connections[connections.length - 1].is_disabled = true
+                        }
+                    }
+
+                    this_i++
+                    other_i++
+
+                }else{
+                    
+                    if( percent(percent_of_baggage_from_this) ){
+                        connections.push( this.connections[this_i] )
+                        nodes.add( this.getNode( this.connections[this_i].from ) )
+                        nodes.add( this.getNode( this.connections[this_i].to   ) )
+
+                    }else{
+                        connections.push( other.connections[other_i] )
+                        nodes.add( other.getNode( other.connections[other_i].from ) )
+                        nodes.add( other.getNode( other.connections[other_i].to   ) )
+                    }
+
+                }
+            }
+
+        }
+
+        var node_clones = Array.from(nodes).map((node)=>node.clone())
+        var conn_clones = connections.map((conn)=>conn.clone())
+
+        var child = new Genome(node_clones, conn_clones)
+
+        return child
     }
 
 }

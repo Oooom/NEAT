@@ -15,4 +15,8 @@ function getNormalRandom() {
     return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
 }
 
-export { getUniformRandomFromRange, getUniformRandomFromRangeInt, getNormalRandom}
+function percent(num){
+    return Math.random() * 100 < num
+}
+
+export {getUniformRandomFromRange, getUniformRandomFromRangeInt, getNormalRandom, percent}
