@@ -22,6 +22,8 @@ class ConnectGene {
     clone(){
         var cl = new ConnectGene(this.from, this.to, this.weight, this.innov, this.disabled)
 
+        cl.is_recurrent = this.is_recurrent
+
         return cl
     }
 }
@@ -159,7 +161,7 @@ class Genome {
             var is_connection_absent = (this.from_connections_of[from.id] == undefined || this.from_connections_of[from.id].findIndex((conn) => conn.to == to.id) == -1)
 
             if (!is_bias_or_input && is_connection_absent ){
-                var new_conn = new ConnectGene(from.id, to.id, NaN, ++this.ctxt.innov, false)
+                var new_conn = new ConnectGene(from.id, to.id, NaN, this.ctxt.getInnov(from.id, to.id), false)
                 new_conn.mutateRandomly()
 
                 this.addConnection(new_conn)
@@ -184,8 +186,8 @@ class Genome {
             if(conn.is_disabled == false){
                 var new_node = new NodeGene("h"+(++this.hidden_id_last), "hidden", sigmoid)
                 
-                var prev_conn = new ConnectGene(conn.from, new_node.id, 1, ++this.ctxt.innov, false)
-                var next_conn = new ConnectGene(new_node.id, conn.to, conn.weight, ++this.ctxt.innov, false)
+                var prev_conn = new ConnectGene(conn.from, new_node.id, 1, this.ctxt.getInnov(conn.from, new_node.id), false)
+                var next_conn = new ConnectGene(new_node.id, conn.to, conn.weight, this.ctxt.getInnov(new_node.id, conn.to), false)
                 next_conn.is_recurrent = conn.is_recurrent
 
                 conn.is_disabled = true
@@ -259,73 +261,76 @@ class Genome {
         var this_i  = 0
         var other_i = 0
 
+        var matching_genes = []
+        var unmatching_genes = {from_this: [], from_other: []}
+
         while(this_i < this.connections.length || other_i < other.connections.length){
 
             if(this_i == this.connections.length || other_i == this.connections.length){
                 if (this_i == this.connections.length) {
-                    while( other_i < other.connections.length ){
-                        if( !percent(percent_of_baggage_from_this) ){
-                            connections.push( other.connections[other_i] )
-                            nodes.add( other.getNode( other.connections[other_i].from ) )
-                            nodes.add( other.getNode( other.connections[other_i].to   ) )
-                        }
-
-                        other_i++
-                    }
+                    unmatching_genes.from_other.push(other_i)
+                    other_i++
                 }
                 else if (other_i == other.connections.length) {
-                    while( this_i < this.connections.length ){
-                        if( percent(percent_of_baggage_from_this) ){
-                            connections.push( this.connections[this_i] )
-                            nodes.add( this.getNode( this.connections[this_i].from ) )
-                            nodes.add( this.getNode( this.connections[this_i].to   ) )
-                        }
-
-                        this_i++
-                    }
+                    unmatching_genes.from_this.push(this_i)
+                    this_i++
                 }
-
-                break
             }else{
                 if (this.connections[this_i].innov == other.connections[other_i].innov) {
-                    
-                    if( percent(50) ){
-                        connections.push( this.connections[this_i] )
-                        nodes.add( this.getNode( this.connections[this_i].from ) )
-                        nodes.add( this.getNode( this.connections[this_i].to   ) )
-                    }else{
-                        connections.push( other.connections[other_i] )
-                        nodes.add( other.getNode( other.connections[other_i].from ) )
-                        nodes.add( other.getNode( other.connections[other_i].to   ) )
-                    }
-
-                    if( other.connections[other_i].is_disabled || this.connections[this_i].is_disabled ){
-                        if( percent(75) ){
-                            connections[connections.length - 1].is_disabled = true
-                        }
-                    }
+                    matching_genes.push( {this_idx: this_i, other_idx: other_i} )
 
                     this_i++
                     other_i++
-
                 }else{
-                    
-                    if( percent(percent_of_baggage_from_this) ){
-                        connections.push( this.connections[this_i] )
-                        nodes.add( this.getNode( this.connections[this_i].from ) )
-                        nodes.add( this.getNode( this.connections[this_i].to   ) )
-
-                    }else{
-                        connections.push( other.connections[other_i] )
-                        nodes.add( other.getNode( other.connections[other_i].from ) )
-                        nodes.add( other.getNode( other.connections[other_i].to   ) )
+                    if (this.connections[this_i].innov < other.connections[other_i].innov) {
+                        unmatching_genes.from_this.push(this_i)
+                        this_i++
+                    } else {
+                        unmatching_genes.from_other.push(other_i)
+                        other_i++
                     }
-
                 }
             }
 
         }
 
+        for(var i = 0; i < matching_genes.length; i++){
+            var this_idx = matching_genes[i].this_idx
+            var other_idx = matching_genes[i].other_idx
+
+            if( percent(50) ){    
+                connections.push(this.connections[this_idx] )
+                nodes.add( this.getNode( this.connections[this_idx].from ) )
+                nodes.add( this.getNode( this.connections[this_idx].to   ) )
+            }else{
+                connections.push( other.connections[other_idx] )
+                nodes.add( other.getNode( other.connections[other_idx].from ) )
+                nodes.add( other.getNode( other.connections[other_idx].to   ) )
+            }
+
+            if (other.connections[other_idx].is_disabled || this.connections[this_idx].is_disabled ){
+                if( percent(75) ){
+                    connections[connections.length - 1].is_disabled = true
+                }
+            }
+        }
+
+        for(var this_idx of unmatching_genes.from_this){
+            if( percent(percent_of_baggage_from_this) ){
+                connections.push( this.connections[this_idx] )
+                nodes.add( this.getNode( this.connections[this_idx].from ) )
+                nodes.add( this.getNode( this.connections[this_idx].to   ) )
+            }
+        }
+
+        for(var other_idx of unmatching_genes.from_other){
+            if( !percent(percent_of_baggage_from_this) ){
+                connections.push( other.connections[other_idx] )
+                nodes.add( other.getNode( other.connections[other_idx].from ) )
+                nodes.add( other.getNode( other.connections[other_idx].to   ) )
+            }
+        }
+        
         var node_clones = Array.from(nodes).map((node)=>node.clone())
         var conn_clones = connections.map((conn)=>conn.clone())
 

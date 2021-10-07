@@ -6,6 +6,8 @@ import { sigmoid, steepSigmoid } from "../nn.mjs"
 import {NeuralNetwork} from "../nn.mjs"
 import {initialGenome, solutionGenome} from "../xor_support.mjs"
 
+import {createContext} from "../lib.mjs"
+
 
 describe("loadOPofIP tests", function(){
     
@@ -478,7 +480,7 @@ describe("mutation add connection tests", function(){
         var comb = {}
 
         for (var iter = 0; iter < 100; iter++){
-            var ctxt = { innov: 0 }
+            var ctxt = createContext()
 
             var genome = solutionGenome(ctxt)
 
@@ -526,7 +528,7 @@ describe("mutate add node tests", function(){
         var comb = {}
 
         for (var iter = 0; iter < 100; iter++){
-            var ctxt = { innov: 0 }
+            var ctxt = createContext()
 
             var genome = solutionGenome(ctxt)
 
@@ -563,10 +565,10 @@ describe("crossover tests", function(){
 
     it("combined info of nodes and connections should be present", function(){
 
-        var ctxt = {innov: 0}
+        var ctxt = createContext()
 
         var g1 = solutionGenome(ctxt)
-        g1.fitness = 0
+        g1.fitness = 1
         var r_conn1 = new ConnectGene("o1", "h1", 0, ++ctxt.innov, false)
         r_conn1.is_recurrent = true
         g1.addConnection(r_conn1)
@@ -582,10 +584,45 @@ describe("crossover tests", function(){
 
         assert.equal(g1.distanceFrom(g2), 2)
         assert.equal(child1.distanceFrom(child2), 0)
+
+        for(var i = 0; i < child1.connections.length; i++){
+            child1.getNode(child1.connections[i].from)
+            child1.getNode(child1.connections[i].to)
+        }
     })  
 
     it("both parents have same fitness", function () {
+        
+        var comb = {}
 
+        for(var i = 0; i < 100; i++){
+            var ctxt = createContext()
+    
+            var g1 = solutionGenome(ctxt)
+            g1.fitness = 0
+            var r_conn1 = new ConnectGene("o1", "h1", 0, 10, false)
+            r_conn1.is_recurrent = true
+            g1.addConnection(r_conn1)
+
+            for(var j = 0; j < g1.connections.length; j++){
+                g1.connections[j].innov += 10
+            }
+
+    
+            var g2 = solutionGenome(ctxt)
+            g2.fitness = 0
+            var r_conn2 = new ConnectGene("o1", "h1", 0, 10, false)
+            r_conn2.is_recurrent = true
+            g2.addConnection(r_conn2)
+    
+            var child1 = g1.crossover(g2)
+
+            for(var j = 0; j < child1.connections.length; j++){
+                comb[child1.connections[j].innov] = true
+            }
+        }
+
+        assert.equal(Object.keys(comb).length, 20, "not all combinations were found. Only these were found + " + JSON.stringify(comb))
     })
 
     it("parent A has higher fitness", function () {
@@ -601,12 +638,3 @@ describe("crossover tests", function(){
     })
 
 })
-
-
-/*
-    TO-DO 
-
-    + need to do some modification in addNode and addConnection mutations so that they take innov from ctxt which stores the combination for generation
-    + in crossover, add iterators and correctly compare the genomes innov
-
-*/

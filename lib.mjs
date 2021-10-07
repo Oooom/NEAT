@@ -19,4 +19,26 @@ function percent(num){
     return Math.random() * 100 < num
 }
 
-export {getUniformRandomFromRange, getUniformRandomFromRangeInt, getNormalRandom, percent}
+function createContext(){
+    return {
+        innov: 0,
+        combn: {},
+        getInnov: function(from, to){
+            
+            if(this.combn[from]){
+
+                if(!this.combn[from][to]){
+                    this.combn[from][to] = ++this.innov
+                }
+
+            }else{
+                this.combn[from] = {[to]: ++this.innov}
+            }
+
+
+            return this.combn[from][to]
+        }
+    }
+}
+
+export {getUniformRandomFromRange, getUniformRandomFromRangeInt, getNormalRandom, percent, createContext}
