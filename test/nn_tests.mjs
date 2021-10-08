@@ -638,3 +638,20 @@ describe("crossover tests", function(){
     })
 
 })
+
+/*
+
+    TO-DO:
+    + construct GA flow:
+        - populate initial generation
+        - for each generation
+            - speciate
+            - calculate fitness
+            - share fitness
+            - reproduce
+                - crossover 75%
+                - mutation  25%
+            
+            - rebalance population
+
+*/
