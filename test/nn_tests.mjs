@@ -589,6 +589,10 @@ describe("crossover tests", function(){
             child1.getNode(child1.connections[i].from)
             child1.getNode(child1.connections[i].to)
         }
+
+        var nodes = new Set(child1.nodes.map((n)=>n.id))
+
+        assert.equal(child1.nodes.length, nodes.size, "nodes in genome are not unique")
     })  
 
     it("both parents have same fitness", function () {
@@ -622,7 +626,7 @@ describe("crossover tests", function(){
             }
         }
 
-        assert.equal(Object.keys(comb).length, 20, "not all combinations were found. Only these were found + " + JSON.stringify(comb))
+        assert.equal(Object.keys(comb).length, 10, "not all combinations were found. Only these were found + " + JSON.stringify(comb))
     })
 
     it("parent A has higher fitness", function () {
@@ -640,18 +644,6 @@ describe("crossover tests", function(){
 })
 
 /*
-
     TO-DO:
-    + construct GA flow:
-        - populate initial generation
-        - for each generation
-            - speciate
-            - calculate fitness
-            - share fitness
-            - reproduce
-                - crossover 75%
-                - mutation  25%
-            
-            - rebalance population
 
 */

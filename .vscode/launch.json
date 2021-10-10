@@ -11,7 +11,7 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\test\\nn_tests.mjs"
+            "program": "${workspaceFolder}\\main.mjs"
         },
         {
             "type": "node",

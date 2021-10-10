@@ -1,11 +1,14 @@
 import {NeuralNetwork} from "./nn.mjs"
-import {calculateFitness} from "./xor_support.mjs"
 
 class Entity{
-    constructor(genome){
+    constructor(genome, calculateFitness){
         this.genome = genome
         this.nn     = new NeuralNetwork(genome)
         this.nn.calculateFitness = calculateFitness
+    }
+
+    clone(){
+        return new Entity(this.genome.clone(), this.calculateFitness)
     }
 }
 

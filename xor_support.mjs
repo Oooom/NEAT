@@ -1,13 +1,25 @@
 import {Genome, NodeGene, ConnectGene} from "./genome.mjs"
 import {sigmoid}               from "./nn.mjs"
 
-function calculateFitness(){
-    var ans1 = this.predict([0, 0])[0]
-    var ans2 = this.predict([0, 1])[0]
-    var ans3 = this.predict([1, 0])[0]
-    var ans4 = this.predict([1, 1])[0]
+function clamp(num){
+    if(num > 1){
+        return 1
+    }
 
-    this.fitness = 4 - Math.abs(ans1 - 0) + Math.abs(ans2 - 1) + Math.abs(ans3 - 1) + Math.abs(ans4 - 0)
+    if(num < 0){
+        return 0
+    }
+
+    return num
+}
+
+function calculateFitness(){
+    var ans1 = clamp(this.predict([0, 0])[0])
+    var ans2 = clamp(this.predict([0, 1])[0])
+    var ans3 = clamp(this.predict([1, 0])[0])
+    var ans4 = clamp(this.predict([1, 1])[0])
+
+    this.fitness = (4 - (Math.abs(ans1 - 0) + Math.abs(ans2 - 1) + Math.abs(ans3 - 1) + Math.abs(ans4 - 0))) ** 2
 }
 
 function initialGenome(ctxt){
@@ -37,8 +49,8 @@ function solutionGenome(ctxt){
     var i1 = new NodeGene("i1", "input")
     var i2 = new NodeGene("i2", "input")
 
-    var h1 = new NodeGene("h1", "hidden", sigmoid)
-    var h2 = new NodeGene("h2", "hidden", sigmoid)
+    var h1 = new NodeGene(ctxt.getHiddenNodeID("i1", "o1"), "hidden", sigmoid)
+    var h2 = new NodeGene(ctxt.getHiddenNodeID("i2", "o1"), "hidden", sigmoid)
 
     var o1 = new NodeGene("o1", "output", sigmoid)
 
