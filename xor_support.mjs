@@ -19,7 +19,11 @@ function calculateFitness(){
     var ans3 = clamp(this.predict([1, 0])[0])
     var ans4 = clamp(this.predict([1, 1])[0])
 
-    this.fitness = (4 - (Math.abs(ans1 - 0) + Math.abs(ans2 - 1) + Math.abs(ans3 - 1) + Math.abs(ans4 - 0))) ** 2
+    this.fitness = (4 - ( (ans1 - 0) + (1 - ans2) + (1 - ans3) + (ans4 - 0))) ** 2
+
+    if(Math.round(ans1) == 0 && Math.round(ans2) == 1 && Math.round(ans3) == 1 && Math.round(ans4) == 0){
+        console.log("solution found.... ")
+    }
 }
 
 function initialGenome(ctxt){

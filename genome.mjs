@@ -18,6 +18,14 @@ class ConnectGene {
     mutateNormally(){
         this.weight += getNormalRandom()
     }
+    
+    // mutateNormally(){
+    //     if(percent(50)){
+    //         this.weight += this.weight * 0.2
+    //     }else{
+    //         this.weight -= this.weight * 0.2
+    //     }
+    // }
 
     clone(){
         var cl = new ConnectGene(this.from, this.to, this.weight, this.innov, this.is_disabled)
@@ -229,37 +237,44 @@ class Genome {
 
             if(this_i == this.connections.length || other_i == genome.connections.length){
                 if (this_i == this.connections.length) {
+                    if (!genome.connections[other_i].is_disabled)
+                        unmatched_count++
                     other_i++
-                    unmatched_count++
                 }
                 else if (other_i == genome.connections.length) {
+                    if(!this.connections[this_i].is_disabled)
+                        unmatched_count++
                     this_i++
-                    unmatched_count++
                 }
             }else{
                 if (this.connections[this_i].innov == genome.connections[other_i].innov) {
-                    sum_weight_difference_of_matched += Math.abs(this.connections[this_i].weight - genome.connections[other_i].weight)
-
-                    matched_count++
+                    
+                    if(!this.connections[this_i].is_disabled && !genome.connections[other_i].is_disabled){
+                        sum_weight_difference_of_matched += Math.abs(this.connections[this_i].weight - genome.connections[other_i].weight)
+    
+                        matched_count++
+                    }else{
+                        if( !(this.connections[this_i].is_disabled && genome.connections[other_i].is_disabled) ){
+                            unmatched_count++
+                        }
+                    }
 
                     this_i++
                     other_i++
                 }else{
                     if (this.connections[this_i].innov < genome.connections[other_i].innov) {
+                        if(!this.connections[this_i].is_disabled)
+                            unmatched_count++
                         this_i++
-                        unmatched_count++
                     } else {
+                        if (!genome.connections[other_i].is_disabled)
+                            unmatched_count++
                         other_i++
-                        unmatched_count++
                     }
                 }
             }
 
         }                
-
-        if(unmatched_count + matched_count * 2 != this.connections.length + genome.connections.length){
-            throw new Error("Matched and Unmatched Count were different from total gene length in distance calculation")
-        }
 
         if( matched_count > 0 ){
             return params.c_um * unmatched_count + params.c_m * (sum_weight_difference_of_matched / matched_count)
@@ -362,11 +377,17 @@ class Genome {
 
     mutate(){
 
-        if ( percent(params.weight_mutation_chance) ){
-            if ( percent(params.weight_mutation_chance_new_random) ){
-                chooseRandomly( this.connections ).mutateRandomly()
-            }else if( percent(params.weight_mutation_chance_uniformly_perturb) ){
-                chooseRandomly( this.connections ).mutateNormally()
+        for(var connection of this.connections){
+            if(!connection.is_disabled){
+                if ( percent(params.weight_mutation_chance) ){
+                    if (percent(params.weight_mutation_chance_uniformly_perturb)){
+                        connection.mutateNormally()
+                    }
+
+                    if ( percent(params.weight_mutation_chance_new_random) ){
+                        connection.mutateRandomly()
+                    }
+                }
             }
         }
 

@@ -13,8 +13,8 @@ import {initialGenome, calculateFitness} from "./xor_support.mjs"
 import {createContext, percent, chooseRandomly} from "./lib.mjs" 
 import * as params from "./parameters.mjs"
 
-var max_pop     = 150
-var comp_thresh = 3.0 
+var max_pop     = 50
+var comp_thresh = 3.0
 
 var generation = []
 var history    = []
@@ -31,6 +31,32 @@ function init(){
     }
 }
 
+function chooseRandomlyFromTopNPercentProportionateToFitness(members, n_percent){
+    var limit = Math.max(2, Math.floor(members.length * n_percent / 100) )
+    var total_fitness = 0
+
+    for(var i = 0; i < limit; i++){
+        total_fitness += members[i].nn.fitness
+    }
+
+    var ball = Math.random() * total_fitness
+
+    var selected = null
+
+    var accum = 0
+    for(var wheel = 0; wheel < limit; wheel++){
+        if(ball >= accum && ball <= accum + members[wheel].nn.fitness){
+            selected = members[wheel]
+
+            break
+        }else{
+            accum += members[wheel].nn.fitness
+        }
+    }
+
+    return selected
+}
+
 function generate(){
 
     // measure performance of the neural network
@@ -42,11 +68,8 @@ function generate(){
     // init specie data
 
     for(var specie of species){
-        if(specie.champion){
-            specie.count = 0
-            specie.sum_fitness = 0
-            specie.members = []
-        }
+        specie.members     = []
+        specie.sum_fitness = 0
     }
 
 
@@ -60,22 +83,21 @@ function generate(){
 
             if(entity.genome.distanceFrom(specie.champion.genome) < comp_thresh){
                 allotted = true
-                
-                // for calculating shared fitness and proportionate offsprings production
-                specie.count++
-                specie.sum_fitness += entity.nn.fitness
 
                 // for members to mate intra-species
                 specie.members.push(entity)
 
                 if(entity.nn.fitness > specie.champion.nn.fitness){
-
-                    if( (!specie.next_champion) || (specie.next_champion && entity.nn.fitness > specie.next_champion.nn.fitness) ){
+                    if ( (!specie.next_champion) || (entity.nn.fitness > specie.next_champion.nn.fitness)) {
                         specie.next_champion = entity
                     }
-
+                }
+                
+                if(entity.nn.fitness > specie.max_fitness){
                     specie.max_fitness = entity.nn.fitness
                 }
+
+                specie.sum_fitness += entity.nn.fitness
 
                 break
             }
@@ -86,16 +108,35 @@ function generate(){
             species.push({
                 id         : ctxt.getSpecieID(),
                 champion   : entity,
-                count      : 1,
-                sum_fitness: entity.nn.fitness,
                 members    : [entity],
-                max_fitness: entity.nn.fitness
+                max_fitness: entity.nn.fitness,
+                sum_fitness: entity.nn.fitness
             })
         }
 
     }
 
     species = species.filter((s)=>s.members.length > 0)
+
+    // adjusted fitness
+    for(var specie of species){
+
+        if(specie.next_champion){
+            specie.champion = specie.next_champion
+        }
+
+        var sum_adjusted_fitness = 0
+
+        for(var entity of specie.members){
+            entity.nn.adjusted_fitness = entity.nn.fitness / specie.members.length
+
+            sum_adjusted_fitness += entity.nn.adjusted_fitness
+        }
+
+        specie.avg_adjusted_fitness = sum_adjusted_fitness / specie.members.length
+
+        specie.members.sort( (a, b) => a.nn.fitness - b.nn.fitness ).reverse()
+    }
 
 
     var to_remove = []
@@ -105,8 +146,10 @@ function generate(){
         ctxt.tickSpecie(specie.id, specie.max_fitness)
         
         
-        if(ctxt.eliminateSpecie(specie.id)){
-            to_remove.push(specie)
+        if(species.length > 1){
+            if(ctxt.eliminateSpecie(specie.id)){
+                to_remove.push(specie)
+            }
         }
     }
 
@@ -118,6 +161,7 @@ function generate(){
     species.sort((s1, s2)=>s1.max_fitness - s2.max_fitness).reverse()
 
     var max_fitness = species[0].max_fitness
+    var global_champion = species[0].champion
 
     ctxt.tickPop(max_fitness)
     if(ctxt.refocusPop()){
@@ -125,78 +169,59 @@ function generate(){
     }
 
     var next_gen = []
-    var sum_species_fitness = 0
-
-    // sharing fitness
+    var global_sum_adjusted_fitness = 0
 
     for(var specie of species){
+        global_sum_adjusted_fitness += specie.avg_adjusted_fitness
 
-        specie.shared_fitness = specie.sum_fitness / specie.count
-
-        sum_species_fitness += specie.shared_fitness
-
-        specie.members.sort( (a, b) => a.nn.fitness - b.nn.fitness ).reverse()
-
-        if(specie.count >= 5){
-
-            if(specie.next_champion){
-                specie.champion = specie.next_champion
-            }
-
+        if(specie.members.length > 5){
             next_gen.push(specie.champion)
-            specie.next_champion = null
         }
     }
 
     var retained_count = next_gen.length
-    var offsprings_to_produce = max_pop - retained_count
 
-    var total_allotted = 0
+    // tasking species to create offsprings proportionate to their avg adjusted fitness
 
-    // tasking species to create offsprings proportionate to their shared fitness
-
-    for(var i = 0; i < species.length - 1; i++){
+    for(var i = 0; i < species.length; i++){
         var specie = species[i]
 
-        specie.offsprings_to_produce = Math.floor(offsprings_to_produce * ( specie.shared_fitness / sum_species_fitness ))
-
-        total_allotted += specie.offsprings_to_produce
-
-        if(specie.members.length - specie.offsprings_to_produce > 2){
-            specie.members.splice(specie.members.length - specie.offsprings_to_produce)
-        }
+        specie.offsprings_to_produce = Math.floor( (max_pop - retained_count) * ( specie.avg_adjusted_fitness / global_sum_adjusted_fitness ))
     }
-
-    species[species.length - 1].offsprings_to_produce = offsprings_to_produce - total_allotted
 
     // reproduce
 
     for(var specie of species){
 
         for(var i = 0; i < specie.offsprings_to_produce; i++){
-            var is_sexual = percent(params.crossover_occurrence_chance)
+            var is_sexual = specie.members.length > 1 && percent(params.crossover_occurrence_chance)
 
             var child_entity = null
 
             if(is_sexual){
-                var parentA = chooseRandomly(specie.members)
-                var parentB = parentA
 
-                while (parentB == parentA){
-                    if( species.length > 1 && percent( params.interspecies_mating_chance ) ){
-                        var random_specie = specie
-
-                        while(random_specie == specie){
-                            random_specie = chooseRandomly(species)
+                try{
+                    var parentA = chooseRandomlyFromTopNPercentProportionateToFitness(specie.members, 10)
+                    var parentB = parentA
+    
+                    while (parentB == parentA){
+                        if( species.length > 1 && percent( params.interspecies_mating_chance ) ){
+                            var random_specie = specie
+    
+                            while(random_specie == specie){
+                                random_specie = chooseRandomly(species)
+                            }
+    
+                            parentB = chooseRandomlyFromTopNPercentProportionateToFitness(random_specie.members, 10)
+                        }else{
+                            parentB = chooseRandomlyFromTopNPercentProportionateToFitness(specie.members, 10)
                         }
-
-                        parentB = chooseRandomly(random_specie.members)
-                    }else{
-                        parentB = chooseRandomly(specie.members)
                     }
+    
+                    child_entity = new Entity(parentA.genome.crossover(parentB.genome), calculateFitness)
+                }catch(e){
+                    child_entity = new Entity( chooseRandomly(specie.members).genome.clone(), calculateFitness )    
                 }
-
-                child_entity = new Entity(parentA.genome.crossover(parentB.genome), calculateFitness)
 
             }else{
                 child_entity = new Entity( chooseRandomly(specie.members).genome.clone(), calculateFitness )
@@ -221,7 +246,7 @@ function generate(){
     for(var i = 0; i < species.length; i++){
         var specie = species[i]
 
-        stats.species.push({id: specie.id, count: specie.count, shared_fitness: specie.shared_fitness, champion: specie.champion.clone()})
+        stats.species.push({id: specie.id, shared_fitness: specie.shared_fitness, champion: specie.champion.clone()})
     }
 
     for(var entity of generation){
@@ -230,7 +255,32 @@ function generate(){
 
     history.push(stats)
 
+    console.log("\nGen " + history.length)
+
     console.log(max_fitness + " vs " + ctxt.globalStats.max_fitness)
+
+    var correctness = true
+
+    var ans1 = Math.round(global_champion.nn.predict([0, 0])[0])
+    var ans2 = Math.round(global_champion.nn.predict([0, 0])[0])
+    var ans3 = Math.round(global_champion.nn.predict([0, 0])[0])
+    var ans4 = Math.round(global_champion.nn.predict([0, 0])[0])
+
+    correctness &= (ans1 == 0)
+    correctness &= (ans2 == 1)
+    correctness &= (ans3 == 1)
+    correctness &= (ans4 == 0)
+
+    console.log(`0 0 -> ${ ans1 }`)
+    console.log(`0 1 -> ${ ans2 }`)
+    console.log(`1 0 -> ${ ans3 }`)
+    console.log(`1 1 -> ${ ans4 }`)
+
+    console.log("hidden nodes " + (global_champion.genome.nodes.length - 4) )
+
+    if(correctness){
+        flag = false
+    }
 
     generation = next_gen
     ctxt.resetCombn()

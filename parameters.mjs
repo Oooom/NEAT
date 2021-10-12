@@ -2,10 +2,10 @@ var c_m  = 0.4
 var c_um =   1
 
 var weight_mutation_chance = 80
-var weight_mutation_chance_new_random = 10
-var weight_mutation_chance_uniformly_perturb = 90
+var weight_mutation_chance_new_random = 5
+var weight_mutation_chance_uniformly_perturb = 95
 
-var add_node_mutation_chance  = 3
+var add_node_mutation_chance = 0.1
 var add_link_mutation_chance = 5
 
 var interspecies_mating_chance = 0.1

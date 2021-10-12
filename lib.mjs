@@ -37,8 +37,14 @@ function getNormalRandom(mean, sd = 1) {
     return y1 * sd + m;
 }
 
-function chooseRandomly(list){
-    return list[ getUniformRandomFromRangeInt(0, list.length) ]
+function chooseRandomly(list, limit){
+    var l = list.length
+    
+    if(limit){
+        l = limit
+    }
+
+    return list[ getUniformRandomFromRangeInt(0, l) ]
 }
 
 function percent(num){
