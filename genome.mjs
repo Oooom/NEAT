@@ -183,6 +183,14 @@ class Genome {
 
     mutateAddConnection() {
 
+        // var random_conn = chooseRandomly( this.connections )
+
+        // if(random_conn.is_disabled){
+        //     random_conn.is_disabled = false
+
+        //     return
+        // }
+
         var unconnected_node_combns = this.getUnconnectedNodeList()
 
         if(unconnected_node_combns.length > 1){
