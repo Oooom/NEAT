@@ -10,6 +10,13 @@ class Entity{
     clone(){
         return new Entity(this.genome.clone(), this.calculateFitness)
     }
+
+    serializableClone(){
+        return {
+            genome: this.genome.serializableClone(),
+            fitness: this.nn.fitness
+        }
+    }
 }
 
 export {Entity}

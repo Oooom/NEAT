@@ -645,16 +645,15 @@ describe("crossover tests", function(){
 
 /*
     TO-DO:
-    + fix fitness sharing                        ✔
-    + do roulette wheel selection                ✔
-    + apply distanceFrom only on enabled genes   ✔
     + add enabling of genes in addConnection
-    + only allow top n% for mating               ✔
     + something related to mutation Power
     + random entity as representative of a specie
     + if a specie is eliminated due to stagnation, replace its population with initial genomes
     + store correct solutions
     + add test to check matched and unmatched count in distance function
     + dynamic thresholding for compatibility
-    + weight mutation for each connection
+
+
+    + generation graphs - histogram which plots fitness max, min, mean, solution
+    + node graph - drop down by iterating over keys of history and render best worst as per specie... create and keep entities so that network can be tested
 */

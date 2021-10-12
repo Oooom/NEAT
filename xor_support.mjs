@@ -22,8 +22,10 @@ function calculateFitness(){
     this.fitness = (4 - ( (ans1 - 0) + (1 - ans2) + (1 - ans3) + (ans4 - 0))) ** 2
 
     if(Math.round(ans1) == 0 && Math.round(ans2) == 1 && Math.round(ans3) == 1 && Math.round(ans4) == 0){
-        console.log("solution found.... ")
+        return true
     }
+
+    return false
 }
 
 function initialGenome(ctxt){

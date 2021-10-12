@@ -24,8 +24,10 @@ function calculateFitness(){
     this.fitness = (6 - ( (ans1) + (1 - ans2) + (ans3) + (1 - ans4) + (ans5) + (1 - ans6))) ** 2
 
     if(Math.round(ans1) == 0 && Math.round(ans2) == 1 && Math.round(ans3) == 0 && Math.round(ans4) == 1 && Math.round(ans5) == 0 && Math.round(ans6) == 1){
-        console.log("solution found.... ")
+        return true
     }
+
+    return false
 }
 
 function initialGenome(ctxt){

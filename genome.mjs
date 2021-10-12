@@ -34,6 +34,10 @@ class ConnectGene {
 
         return cl
     }
+
+    serializableClone(){
+        return JSON.parse(JSON.stringify(this))
+    }
 }
 
 class NodeGene {
@@ -55,6 +59,10 @@ class NodeGene {
         }
 
         return cl
+    }
+
+    serializableClone() {
+        return JSON.parse(JSON.stringify(this))
     }
 }
 
@@ -416,6 +424,15 @@ class Genome {
         return new Genome(node_clones, conn_clones, this.ctxt)
     }
 
+    serializableClone(){
+        var node_clones = this.nodes      .map((node)=>node.serializableClone())
+        var conn_clones = this.connections.map((conn)=>conn.serializableClone())
+
+        return {
+            nodes: node_clones,
+            connections: conn_clones
+        }
+    }
 }
 
 export { Genome, NodeGene, ConnectGene }

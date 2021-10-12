@@ -1,0 +1,164 @@
+<html>
+
+<head>
+    <title>NEAT ui</title>
+    <style>
+        #specie_viz{
+            transform: rotateZ(270deg);
+            position: absolute;
+            top: 600px;
+            left: -440px;
+        }
+    </style>
+</head>
+
+<body>
+    <button>RESET</button>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <button onclick="initXOR()">XOR</button>
+    <button onclick="initPATTERN()">PATTERN</button>
+
+    <br>
+    <br>
+
+    <button onclick="generate()">GENERATE</button>
+    <input id="generation_count" type="number" min="1" value="1" />
+    <button onclick="generateTillSolution()">GENERATE TILL SOLUTION</button>
+    <br>
+    <br>
+
+    <canvas id="specie_viz" style="display: block" width="1400" height="400"></canvas>
+</body>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.3/Chart.js'></script>
+<script>
+    function randomColor(){
+        return "#000000".replace(/0/g,function(){return (~~(Math.random()*16)).toString(16);});
+    }
+</script>
+<script>
+    var ctx = document.getElementById("specie_viz").getContext("2d");
+
+    var datasets = []
+    var xData = []
+
+    const myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: xData,
+            datasets: datasets
+        },
+        options: {
+            legend: {
+                display: false
+            },
+
+            responsive: false,
+
+            scales: {
+                yAxes: [{
+                    stacked: true,
+                }]
+            },
+            animation: {
+                duration: 100,
+            },
+        }
+    });
+
+    var chartCtxt = {}
+
+    function addSpecieStats(sid, count){
+        if(chartCtxt[sid]){
+            chartCtxt[sid].data.push(count)
+        }else{
+            var padding = []
+
+            chartCtxt[sid] = {
+                fill: true,
+                backgroundColor: randomColor(),
+                data: padding
+            }
+
+            for(var i = 0; i < xData.length; i++){
+                padding.push(0)
+            }
+
+            padding.push(count)
+
+            datasets.push(chartCtxt[sid])
+        }
+    }
+</script>
+<script>
+    
+</script>
+<script>
+    var ga_worker = new Worker('ga_adapter.mjs', {
+        type: "module"
+    });
+
+    ga_worker.onmessage = function (e) {
+        switch (e.data.type) {
+            case "gen_stats":
+                handleGenerationStats(e.data.stats)
+                break
+        }
+    }
+
+    function initXOR() {
+        ga_worker.postMessage({
+            type: "init",
+            what: "XOR"
+        })
+    }
+
+    function initPATTERN() {
+        ga_worker.postMessage({
+            type: "init",
+            what: "PATTERN"
+        })
+    }
+
+    function generate() {
+        ga_worker.postMessage({
+            type: "generate",
+            how_many: parseInt(generation_count.value)
+        })
+    }
+
+    function generateTillSolution() {
+        ga_worker.postMessage({
+            type: "generate",
+            how_many: "till_solution"
+        })
+    }
+
+    var history = {}
+
+    function handleGenerationStats(stats) {
+        
+        var solutions = []
+
+        for(var i = 0; i < stats.species.length; i++){
+            addSpecieStats(stats.species[i].id, stats.species[i].members)
+
+            if(stats.species[i].best){
+                solutions.push({
+                    specie: stats.species[i].id,
+                    best: stats.species[i].best,
+                    worst: stats.species[i].worst
+                })
+            }
+        }
+
+        xData.push(xData.length + `(${stats.species.length})`)
+
+        if(solutions.length > 0){
+            history["gen" + xData.length] = solutions
+        }
+
+        myChart.update()
+    }
+</script>
+
+</html>
