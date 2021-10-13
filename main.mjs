@@ -21,6 +21,8 @@ function initXOR(){
     for(var i = 0; i < params.max_pop; i++){
         generation.push(new Entity(xor.initialGenome(ctxt), ctxt.calculateFitness))
     }
+
+    gen_count = 0
 }
 
 function initPATTERN(){
@@ -33,6 +35,8 @@ function initPATTERN(){
     for(var i = 0; i < params.max_pop; i++){
         generation.push(new Entity(pattern.initialGenome(ctxt), ctxt.calculateFitness))
     }
+
+    gen_count = 0
 }
 
 function chooseRandomlyFromTopNPercentProportionateToFitness(members, n_percent){
@@ -509,11 +513,11 @@ function generatePATTERN(callback){
             worst = members[members.length - 1].serializableClone()
         }
 
-        stats.species.push({id: specie.id, members: specie.members.length, best: best, worst: worst})
+        stats.species.push({id: specie.id, members: specie.members.length, best: best, worst: worst, avg_adjusted_fitness: specie.avg_adjusted_fitness})
     }
 
     for(var entity of generation){
-        stats.pop.push({ fitness: entity.nn.fitness, nodes: entity.baggage_nodes, conns: entity.baggage_conns })
+        stats.pop.push({ fitness: entity.nn.fitness, nodes: entity.baggage_nodes, conns: entity.baggage_conns, is_solution = entity.is_solution })
     }
 
     callback(stats, solution_found_this_gen)

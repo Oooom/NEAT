@@ -649,7 +649,6 @@ describe("crossover tests", function(){
     + something related to mutation Power
     + random entity as representative of a specie
     + if a specie is eliminated due to stagnation, replace its population with initial genomes
-    + store correct solutions
     + add test to check matched and unmatched count in distance function
     + dynamic thresholding for compatibility
 
