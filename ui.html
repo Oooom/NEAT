@@ -9,6 +9,11 @@
             top: 600px;
             left: -440px;
         }
+
+        #node_graph{
+            height: 400px;
+            width : 400px;
+        }
     </style>
 </head>
 
@@ -30,13 +35,31 @@
     <canvas id="specie_viz" style="display: block" width="1400" height="400"></canvas>
 
     <div style="position: absolute; left: 500">
-        <select id="gen_selector">
+        
+        Fitness Distribution throughout the population
+        
+        <select id="gen_selector" onchange="generationChange()">
         </select>
 
         <br>
         <br>
 
         <canvas id="gen_histogram" width="400" height="250"></canvas>
+        
+        <br>
+        
+        <span id="comments"></span>
+        <br>
+
+        Solutions
+
+        <select id="soln_selector" onchange="solutionChange()">
+        </select>
+
+        <span id="soln_comments"></span>
+        <br>
+
+        <div id="node_graph"></canvas>
     </div>
 </body>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.3/Chart.js'></script>
@@ -106,7 +129,7 @@ var histogram_data = {
     data  : []
 }
 
-new Chart(gen_histogram.getContext("2d"), {
+var gen_hist_chart = new Chart(gen_histogram.getContext("2d"), {
   type: 'bar',
   data: {
     labels: histogram_data.labels,
@@ -130,10 +153,6 @@ new Chart(gen_histogram.getContext("2d"), {
     }
   }
 });
-
-function showGenHist(gen){
-
-}
 </script>
 <script>
     var ga_worker = new Worker('ga_adapter.mjs', {
@@ -187,7 +206,8 @@ function showGenHist(gen){
 
             if(stats.species[i].best){
                 solutions.push({
-                    specie: stats.species[i].id,
+                    id: stats.species[i].id,
+                    avg_adjusted_fitness: stats.species[i].avg_adjusted_fitness,
                     best: stats.species[i].best,
                     worst: stats.species[i].worst
                 })
@@ -196,18 +216,188 @@ function showGenHist(gen){
 
         if(solutions.length > 0){
             history["gen" + xData.length] = solutions
+
+            var opt = document.createElement("option")
+            opt.value = "gen" + xData.length
+            opt.innerText = "gen" + xData.length
+            soln_selector.appendChild(opt)
+            soln_selector.value = "gen" + xData.length
+
+            soln_selector.onchange()
         }
 
         histogram_data["gen" + xData.length] = stats.pop
         
         var gen_option = document.createElement("option")
         gen_option.value = "gen" + xData.length
+        gen_option.innerText = "gen" + xData.length
         gen_selector.appendChild(gen_option)
         gen_selector.value = "gen" + xData.length
 
         xData.push(xData.length + `(${stats.species.length})`)
         myChart.update()
+
+        setTimeout(() => {
+            gen_selector.onchange()
+        }, 0);
+    }
+
+    function generationChange(){
+        var gen = gen_selector.value
+
+        var data = histogram_data[gen]
+
+        var buckets = []
+
+        var max = Math.ceil(Math.max(...data.map((e)=>e.fitness)))
+
+        histogram_data.labels.splice(0)
+
+        for(var i = 0; i <= max; i++){
+            histogram_data.labels.push(i)
+            buckets[i] = 0
+        }
+        
+        var mean_fitness = 0
+        var mean_solution_fitness = 0
+        var solution_count = 0
+
+        data.forEach((e)=>{
+            buckets[Math.round(e.fitness)]++
+            mean_fitness += e.fitness
+
+            if(e.is_solution){
+                mean_solution_fitness += e.fitness
+                solution_count++
+            }
+        })
+        mean_fitness /= data.length
+        mean_solution_fitness /= solution_count 
+
+        comments.innerText = `Mean Fitness: ${mean_fitness} \n Mean Solution Fitness: ${mean_solution_fitness}`
+
+        histogram_data.data.splice(0)
+        for(var i = 0; i < buckets.length; i++){
+            histogram_data.data.push(buckets[i])
+        }
+
+        gen_hist_chart.update()
+    }
+
+    function solutionChange(){
+        var text = `Species: ${history[soln_selector.value].length} <br> `
+
+        for(var specie of history[soln_selector.value]){
+            text += `<br> ${specie.id} (${specie.avg_adjusted_fitness}) : ${specie.worst.fitness} <button onclick="drawNN('${soln_selector.value}','${specie.id}','worst')">render worst</button> / ${ specie.best.fitness} <button onclick="drawNN('${soln_selector.value}','${specie.id}','best')">render best</button>`
+        }
+
+        soln_comments.innerHTML = text
     }
 </script>
+<script type="module">
+    import {Entity} from "./entity.mjs"
+    import {Genome, NodeGene, ConnectGene} from "./genome.mjs"
+    import {sigmoid} from "./nn.mjs"
+    import * as pattern from "./pattern_support.mjs"
+    import * as xor from "./xor_support.mjs"
 
+
+    function getEntityOf(gen, specie, best_or_worst){
+        var target_genome = history[gen][history[gen].findIndex((s)=>s.id == specie)][best_or_worst].genome
+
+        return new Entity(
+            new Genome(
+                target_genome.nodes.map((node)=>NodeGene.createFromSerialized(node, sigmoid)),
+                target_genome.connections.map((conn)=>ConnectGene.createFromSerialized(conn))
+            ),
+            pattern.calculateFitness
+        )
+    }
+    
+    window.getEntityOf = getEntityOf
+</script>
+<script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+<script src="https://unpkg.com/klayjs@0.4.1/klay.js"></script>
+<script src="https://cytoscape.org/cytoscape.js-klay/cytoscape-klay.js"></script>
+<script>
+    var cy = cytoscape({
+        container: node_graph,
+        layout: {
+            name: "klay"
+        },
+        style: [
+            {
+                selector: 'node',
+                style: {
+                    'label': 'data(id)',
+                    'color'  : 'white',
+                    "text-valign": "center",
+                    "text-halign": "center",
+                }
+            },
+
+            {
+                selector: 'edge',
+                style: {
+                    'curve-style': 'bezier',
+                    'target-arrow-shape': 'triangle',
+                    'label': 'data(weight)'
+                }
+            }
+        ],
+    });
+
+    function addNode(id){
+        cy.add({
+            group: 'nodes',
+            data: { id: id },
+        });
+    }
+
+    function addConnection(id, from, to, weight){
+        cy.add(
+            { group: 'edges', data: { id: id, source: from, target: to, weight: weight } }
+        );
+    }
+
+    function layout(){
+        cy.layout({name: "klay"}).run()
+    }
+
+    function clear(){
+        cy.remove(cy.collection("node"))
+        cy.remove(cy.collection("edge"))
+    }
+
+    function drawNN(gen, specie, best_or_worst){
+        clear()
+
+        var target_genome = history[gen][history[gen].findIndex((s)=>s.id == specie)][best_or_worst].genome
+
+        var enabled_nodes = new Set()
+
+        var conns_to_render = []
+
+        for(var conn of target_genome.connections){
+            if(!conn.is_disabled){
+                conns_to_render.push(conn)
+                enabled_nodes.add(conn.from)
+                enabled_nodes.add(conn.to)
+            }
+        }
+
+        for(var node of enabled_nodes){
+            addNode(node)
+        }
+
+        var cid = 0
+        for(var conn of conns_to_render){
+            addConnection("e"+cid, conn.from, conn.to, parseInt(conn.weight * 100) / 100)
+
+            cid++
+        }
+
+        layout()
+    }
+</script>
 </html>

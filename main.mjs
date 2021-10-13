@@ -517,7 +517,7 @@ function generatePATTERN(callback){
     }
 
     for(var entity of generation){
-        stats.pop.push({ fitness: entity.nn.fitness, nodes: entity.baggage_nodes, conns: entity.baggage_conns, is_solution = entity.is_solution })
+        stats.pop.push({ fitness: entity.nn.fitness, nodes: entity.baggage_nodes, conns: entity.baggage_conns, is_solution: entity.is_solution })
     }
 
     callback(stats, solution_found_this_gen)

@@ -1,4 +1,4 @@
-var max_pop = 150
+var max_pop = 200
 var comp_thresh = 3.0
 
 var c_m  = 0.4

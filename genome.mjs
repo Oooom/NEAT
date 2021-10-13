@@ -38,6 +38,13 @@ class ConnectGene {
     serializableClone(){
         return JSON.parse(JSON.stringify(this))
     }
+
+    static createFromSerialized(obj){
+        var conn = new ConnectGene(obj.from, obj.to, obj.weight, obj.innov, obj.is_disabled)
+        conn.is_recurrent = obj.is_recurrent
+
+        return obj
+    }
 }
 
 class NodeGene {
@@ -63,6 +70,14 @@ class NodeGene {
 
     serializableClone() {
         return JSON.parse(JSON.stringify(this))
+    }
+
+    static createFromSerialized(obj, activation_fn){
+        var node = new NodeGene(obj.id, obj.type, activation_fn)
+
+        node.op = obj.op
+
+        return node
     }
 }
 
