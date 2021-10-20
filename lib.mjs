@@ -1,3 +1,5 @@
+import * as params from "./parameters.mjs"
+
 function getUniformRandomFromRange(min, max){
     return Math.random() * (max - min) + min
 }
@@ -111,7 +113,7 @@ function createContext(){
             }
         },
         eliminateSpecie: function(specie_id){
-            if(this.specieStats[specie_id].timer > 10){
+            if(this.specieStats[specie_id].timer > params.stagnate_specie_after_gens){
                 delete this.specieStats[specie_id]
 
                 return true
@@ -128,7 +130,7 @@ function createContext(){
             }
         },
         refocusPop: function(){
-            if (this.globalStats.timer > 15) {
+            if (this.globalStats.timer > params.stagnate_pop_after_gens) {
                 this.globalStats.timer = 0
 
                 return true

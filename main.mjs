@@ -286,6 +286,8 @@ function generateXOR(callback){
 
 function generatePATTERN(callback){
 
+    console.time("tick")
+
     // measure performance of the neural network
     var solution_found_this_gen = false
 
@@ -533,6 +535,8 @@ function generatePATTERN(callback){
 
     generation = next_gen
     ctxt.resetCombn()
+
+    console.timeEnd("tick")
 }
 
 export {initPATTERN, generatePATTERN}
