@@ -90,4 +90,18 @@ function solutionGenome(ctxt){
     return genome
 }
 
-export {calculateFitness, initialGenome, solutionGenome}
+function afterGenChampionInspection(gen_count, global_champion) {
+    var ans1 = Math.round(global_champion.nn.predict([0, 0])[0])
+    var ans2 = Math.round(global_champion.nn.predict([0, 1])[0])
+    var ans3 = Math.round(global_champion.nn.predict([1, 0])[0])
+    var ans4 = Math.round(global_champion.nn.predict([1, 1])[0])
+
+    console.log("Gen " + gen_count)
+
+    console.log("0 0 -> " + ans1)
+    console.log("0 1 -> " + ans2)
+    console.log("1 0 -> " + ans3)
+    console.log("1 1 -> " + ans4)
+}
+
+export {calculateFitness, initialGenome, solutionGenome, afterGenChampionInspection}

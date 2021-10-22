@@ -1,8 +1,11 @@
-import { initPATTERN, generatePATTERN } from "./main.mjs";
+import { init, generate } from "./main.mjs";
+import * as pattern from "./pattern_support.mjs"
+import * as xor from "./xor_support.mjs"
 
 var ctxt = {
-    what: null,
-    solved: false
+    what   : null,
+    solved : false,
+    task   : null
 }
 
 onmessage = function(e) {
@@ -22,9 +25,20 @@ function handleINIT(what){
     
     ctxt.what = what
     
-    if(what == "PATTERN"){
-        initPATTERN()
+    switch(what){
+        case "PATTERN":
+            ctxt.task = pattern
+            break
+        
+        case "XOR":
+            ctxt.task = xor
+            break
+        
+        default:
+            throw new Error("Unidentified Task")
     }
+
+    init(ctxt.task)
 }
 
 function handleGENERATE(data){
@@ -34,13 +48,11 @@ function handleGENERATE(data){
 
         if(data.how_many == "till_solution"){
             while(!ctxt.solved){
-                generatePATTERN(generationTick)
+                generate(ctxt.task, generationTick)
             }
         }else{
-            if(ctxt.what == "PATTERN"){
-                for(var i = 0; i < data.how_many; i++)
-                    generatePATTERN(generationTick)
-            }
+            for(var i = 0; i < data.how_many; i++)
+                generate(ctxt.task, generationTick)
         }
 
 

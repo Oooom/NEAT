@@ -50,4 +50,15 @@ function initialGenome(ctxt){
     return genome
 }
 
-export {calculateFitness, initialGenome}
+function afterGenChampionInspection(gen_count, global_champion){
+    var ans1 = Math.round(global_champion.nn.predict([0])[0])
+    var ans2 = Math.round(global_champion.nn.predict([0])[0])
+    var ans3 = Math.round(global_champion.nn.predict([0])[0])
+    var ans4 = Math.round(global_champion.nn.predict([0])[0])
+    var ans5 = Math.round(global_champion.nn.predict([0])[0])
+    var ans6 = Math.round(global_champion.nn.predict([0])[0])
+
+    console.log(`GEN ${gen_count}    Pattern: ${ans1} ${ans2} ${ans3} ${ans4} ${ans5} ${ans6}`)
+}
+
+export {calculateFitness, initialGenome, afterGenChampionInspection}
