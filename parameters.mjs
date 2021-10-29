@@ -20,6 +20,8 @@ var crossover_occurrence_chance = 75
 var stagnate_pop_after_gens = 20
 var stagnate_specie_after_gens = 15
 
+var top_n_percent_for_mating = 10
+
 export { 
     c_m, c_um, 
     weight_mutation_chance, weight_mutation_chance_new_random, weight_mutation_chance_uniformly_perturb, 
@@ -28,5 +30,6 @@ export {
     crossover_occurrence_chance, interspecies_mating_chance, 
     max_pop, 
     comp_thresh,
-    stagnate_pop_after_gens, stagnate_specie_after_gens
+    stagnate_pop_after_gens, stagnate_specie_after_gens,
+    top_n_percent_for_mating
 }

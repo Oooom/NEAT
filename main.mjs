@@ -142,6 +142,9 @@ function generate(task, callback){
 
     // adjusted fitness
     for(var specie of species){
+        var number_of_members_mating = Math.floor(specie.members.length * params.top_n_percent_for_mating / 100)
+
+        specie.members.sort((a, b) => a.nn.fitness - b.nn.fitness).reverse()
 
         if(specie.next_champion){
             specie.champion = specie.next_champion
@@ -149,15 +152,20 @@ function generate(task, callback){
 
         var sum_adjusted_fitness = 0
 
-        for(var entity of specie.members){
+        for(var i = 0; i < specie.members.length; i++){
+            var entity = specie.members[i]
             entity.nn.adjusted_fitness = entity.nn.fitness / specie.members.length
 
-            sum_adjusted_fitness += entity.nn.adjusted_fitness
+            if(i <= number_of_members_mating){
+                sum_adjusted_fitness += entity.nn.fitness
+            }
         }
 
-        specie.avg_adjusted_fitness = sum_adjusted_fitness / specie.members.length
-
-        specie.members.sort( (a, b) => a.nn.fitness - b.nn.fitness ).reverse()
+        if(number_of_members_mating == 0){
+            specie.avg_adjusted_fitness = sum_adjusted_fitness / specie.members.length
+        }else{
+            specie.avg_adjusted_fitness = sum_adjusted_fitness / number_of_members_mating
+        }
     }
 
 
@@ -223,7 +231,7 @@ function generate(task, callback){
             if(is_sexual){
 
                 try{
-                    var parentA = chooseRandomlyFromTopNPercentProportionateToFitness(specie.members, 10)
+                    var parentA = chooseRandomlyFromTopNPercentProportionateToFitness(specie.members, params.top_n_percent_for_mating)
                     var parentB = parentA
     
                     while (parentB == parentA){
@@ -234,9 +242,9 @@ function generate(task, callback){
                                 random_specie = chooseRandomly(species)
                             }
     
-                            parentB = chooseRandomlyFromTopNPercentProportionateToFitness(random_specie.members, 10)
+                            parentB = chooseRandomlyFromTopNPercentProportionateToFitness(random_specie.members, params.top_n_percent_for_mating)
                         }else{
-                            parentB = chooseRandomlyFromTopNPercentProportionateToFitness(specie.members, 10)
+                            parentB = chooseRandomlyFromTopNPercentProportionateToFitness(specie.members, params.top_n_percent_for_mating)
                         }
                     }
     
